@@ -16,6 +16,7 @@
             </Grid.RowDefinitions>
             <TextBox x:Name="Console" IsReadOnly="True" Margin="0,10,0,0"></TextBox>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="1">
+                <Button Command="{Binding Restrictions.Reset}" Margin="0,0,10,0">Reset</Button>
                 <Button Click="DumpClicked">Dump</Button>
             </StackPanel>
             

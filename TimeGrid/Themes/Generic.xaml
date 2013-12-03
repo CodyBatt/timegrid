@@ -7,7 +7,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ToggleCell}">
-                    <Border x:Name="PART_CellBorder" Background="Red" Margin="1,1,0,0"  >
+                    <Border x:Name="PART_CellBorder" Background="{TemplateBinding OffBackgroundBrush}" Margin="1,1,0,0"  >
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
@@ -16,7 +16,19 @@
                                         <ColorAnimation Duration="0:0:0.1" To="Blue" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="PART_CellBorder"/>
                                     </Storyboard>
                                 </VisualState>
-                                <VisualState x:Name="Drag"></VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="DragStates">
+                                <VisualState x:Name="NoDrag"/>
+                                <VisualState x:Name="DragOn">
+                                    <Storyboard>
+                                        <ColorAnimation Duration="0:0:0.1" To="LightGreen" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="PART_CellBorder"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="DragOff">
+                                    <Storyboard>
+                                        <ColorAnimation Duration="0:0:0.1" To="LightCoral" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="PART_CellBorder"/>
+                                    </Storyboard>
+                                </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
                     </Border>

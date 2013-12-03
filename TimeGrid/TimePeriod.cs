@@ -4,8 +4,11 @@ using System.ComponentModel.Design.Serialization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Microsoft.Runtime.CompilerServices;
 using ReactiveUI;
+using ReactiveUI.Xaml;
+
 
 namespace TimeGrid
 {
@@ -35,6 +38,14 @@ namespace TimeGrid
         private const int HoursPerDay = 24;
         public WeeklyTimePeriod(bool[,] timegrid = null)
         {
+            Hours = new ReactiveCollection<HourlyTimePeriod>();
+            for (var day = 0; day < DaysPerWeek; day++)
+            {
+                for (var hour = 0; hour < HoursPerDay; hour++)
+                {
+                    Hours.Add(new HourlyTimePeriod(day, hour));
+                }
+            }
             ResetTimeConfiguration(timegrid);
         }
 
@@ -61,21 +72,33 @@ namespace TimeGrid
             return result;
         }
 
+        private ReactiveCommand _reset;
+        public ICommand Reset
+        {
+            get
+            {
+                if (_reset != null) return _reset;
+                _reset = new ReactiveCommand(); // Can execute
+                _reset.Subscribe(x => ResetTimeConfiguration());
+                return _reset;
+            }
+        }
+
+
         public void ResetTimeConfiguration(bool[,] timegrid = null)
         {
-
-            Hours = new ReactiveCollection<HourlyTimePeriod>();
-            for (var day = 0; day < 7; day++)
+            for (var day = 0; day < DaysPerWeek; day++)
             {
-                for (var hour = 0; hour < 24; hour++)
+                for (var hour = 0; hour < HoursPerDay; hour++)
                 {
+                    var hourIndex = day * HoursPerDay + hour;
                     if (timegrid != null && timegrid.GetLongLength(0) > day)
                     {
-                        Hours.Add((new HourlyTimePeriod(day, hour, timegrid.GetLongLength(1) > hour && timegrid[day, hour])));
+                        Hours[hourIndex].Enabled = timegrid.GetLongLength(1) > hour && timegrid[day, hour];
                     }
                     else
                     {
-                        Hours.Add(day < 5 ? new HourlyTimePeriod(day, hour, hour > 8 && hour < 19) : new HourlyTimePeriod(day,hour));
+                        Hours[hourIndex].Enabled = false;
                     }
                 }
             }

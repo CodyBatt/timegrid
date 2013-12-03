@@ -56,7 +56,7 @@ namespace TimeGrid
                 },
             });
 
-            this.DataContext = this;
+            DataContext = this;
         }
 
         public static readonly DependencyProperty RestrictionsProperty =

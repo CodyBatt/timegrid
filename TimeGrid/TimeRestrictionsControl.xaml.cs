@@ -3,7 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-
+using System.Windows.Input;
 
 namespace TimeGrid
 {
@@ -27,24 +27,65 @@ namespace TimeGrid
                     Grid.SetColumn(_hourCells[day,hour], hour + 1);
                     Grid.SetRow(_hourCells[day,hour], day + 1);
                     _hourCells[day, hour].PreviewMouseLeftButtonDown += TimeGrid_PreviewMouseLeftButtonDown;
+                    _hourCells[day, hour].PreviewMouseLeftButtonUp += TimeGrid_PreviewMouseLeftButtonUp;
+                    _hourCells[day, hour].PreviewMouseMove += TimeGrid_PreviewMouseMove;
                     WeekGrid.Children.Add(_hourCells[day, hour]);
                 }
             }
-            WeekGrid.DataContext = this;
+            WeekGrid.DataContext = this;            
         }
 
-        void TimeGrid_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        #region Drag Support
+        private ToggleCell _dragSource;
+        private Point? _mouseDragStart;
+        private CellRegion _dragRegion;
+
+        void TimeGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Toggle the state of the ToggleCell that was clicked.
-            // Get the cell with
-            var element = sender as UIElement;
+            var element = sender as ToggleCell;
             if (element == null) return;
-            var row = Grid.GetRow(element);
-            var col = Grid.GetColumn(element);
-            // Set enabled to false
-            _hourCells[row - 1, col - 1].Selected = !_hourCells[row - 1, col - 1].Selected;
+            _dragSource = element;
+            _dragSource.Selected = !_dragSource.Selected;
+            _mouseDragStart = e.GetPosition(this);         
         }
-        
+
+        void TimeGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var element = sender as ToggleCell;
+            if (element == null) return;
+
+            if (_dragRegion != null)
+            {
+                _dragRegion.ApplySelection(_hourCells, _dragSource.Selected);
+                EndDragging();
+            }
+        }
+
+        void TimeGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            var target = sender as ToggleCell;
+            if (_mouseDragStart != null && _dragSource != target) // Mouse is down
+            {
+                var newRegion = new CellRegion(_hourCells,_dragSource, target);
+                if (_dragRegion != null)
+                {
+                    if (newRegion.TopLeft == _dragRegion.TopLeft && newRegion.BottomRight == _dragRegion.BottomRight) return;
+                    _dragRegion.SetVisualStates(_hourCells, "NoDrag");
+                }
+                _dragRegion = newRegion;
+                _dragRegion.SetVisualStates(_hourCells, _dragSource.Selected ? "DragOn" : "DragOff");
+            }
+        }
+
+        void EndDragging()
+        {
+            _mouseDragStart = null;
+            _dragSource = null;
+            _dragRegion = null;
+        }
+        #endregion
+
+        #region TimeRestrictions
         public static readonly DependencyProperty TimeRestrictionsProperty =
             DependencyProperty.Register("TimeRestrictions", typeof (WeeklyTimePeriod), typeof (TimeRestrictionsControl), new PropertyMetadata(TimeRestrictionsChanged));
         public WeeklyTimePeriod TimeRestrictions
@@ -53,6 +94,15 @@ namespace TimeGrid
             set { SetValue(TimeRestrictionsProperty, value); }
         }
 
+        static void TimeRestrictionsChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
+        {
+            var thisObj = obj as TimeRestrictionsControl;
+            if (thisObj == null) return;
+            thisObj.BindCells();
+        }
+        #endregion
+
+        #region MinCellSize
         public static readonly DependencyProperty MinCellSizeProperty =
             DependencyProperty.Register("MinCellSize", typeof (int), typeof (TimeRestrictionsControl), new PropertyMetadata(20));
         public int MinCellSize
@@ -60,18 +110,10 @@ namespace TimeGrid
             get { return (int) GetValue(MinCellSizeProperty); }
             set { SetValue(MinCellSizeProperty, value); }
         }
-
-        static void TimeRestrictionsChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
-        {
-            var thisObj = obj as TimeRestrictionsControl;
-            if (thisObj == null) return;
-            thisObj.BindCells();
-        }
+        #endregion
 
         void BindCells()
         {
-            // Set the datacontext of the Border to the 
-            // hourlytimeperiod from the TimeRestrictions.Hours property
             const int firstHourOffset = 0;
             for (var day = 0; day < DaysPerWeek; day++)
             {
@@ -88,6 +130,55 @@ namespace TimeGrid
                 }
             }
         }
-    }
 
+        class CellRegion
+        {
+            public CellRegion(ToggleCell[,] cells, ToggleCell first, ToggleCell second)
+            {
+                var firstx = Grid.GetColumn(first) - 1;
+                var secondx = Grid.GetColumn(second) - 1;
+                var firsty = Grid.GetRow(first) - 1;
+                var secondy = Grid.GetRow(second) - 1;
+                var minx = Math.Min(firstx, secondx);
+                var miny = Math.Min(firsty, secondy);
+                var maxx = Math.Max(firstx, secondx);
+                var maxy = Math.Max(firsty, secondy);
+                TopLeft = cells[miny, minx];
+                BottomRight = cells[maxy, maxx];
+            }
+
+            public ToggleCell TopLeft { get; private set; }
+            public ToggleCell BottomRight { get; private set; }
+
+            public void SetVisualStates(ToggleCell[,] cells, string state)
+            {
+                ApplyActionToRegion(cells, (cell) => VisualStateManager.GoToState(cell, state, true));
+            }
+
+            public void ApplySelection(ToggleCell[,] cells, bool select)
+            {
+                ApplyActionToRegion(cells, (cell) =>
+                {
+                    VisualStateManager.GoToState(cell, "NoDrag", true);
+                    VisualStateManager.GoToState(cell, "Normal", true);
+                    cell.Selected = select;
+                });
+            }
+
+            void ApplyActionToRegion(ToggleCell[,] cells, Action<ToggleCell> action)
+            {
+                var startx = Grid.GetColumn(TopLeft) - 1;
+                var endx = Grid.GetColumn(BottomRight) - 1;
+                var starty = Grid.GetRow(TopLeft) - 1;
+                var endy = Grid.GetRow(BottomRight) - 1;
+                for (var x = startx; x <= endx; x++)
+                {
+                    for (var y = starty; y <= endy; y++)
+                    {
+                        action(cells[y, x]);
+                    }
+                }
+            }
+        }
+    }
 }

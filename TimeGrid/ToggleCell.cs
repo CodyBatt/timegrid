@@ -69,7 +69,8 @@ namespace TimeGrid
 
         void TimeCell_MouseEnter(object sender, MouseEventArgs e)
         {
-            VisualStateManager.GoToState(this, "MouseOver", true);
+            var result = VisualStateManager.GoToState(this, "MouseOver", true);
+            int breakhere = 100;
         }
 
         public static readonly DependencyProperty SelectedProperty =
@@ -90,7 +91,6 @@ namespace TimeGrid
 
         public static readonly DependencyProperty OnBackgroundBrushProperty =
             DependencyProperty.Register("OnBackgroundBrush", typeof (Brush), typeof (ToggleCell), new PropertyMetadata(new SolidColorBrush(Colors.Green)));
-
         public Brush OnBackgroundBrush
         {
             get { return (Brush) GetValue(OnBackgroundBrushProperty); }
@@ -99,12 +99,20 @@ namespace TimeGrid
 
         public static readonly DependencyProperty OffBackgroundBrushProperty =
             DependencyProperty.Register("OffBackgroundBrush", typeof (Brush), typeof (ToggleCell), new PropertyMetadata(new SolidColorBrush(Colors.Red)));
-
         public Brush OffBackgroundBrush
         {
             get { return (Brush) GetValue(OffBackgroundBrushProperty); }
             set { SetValue(OffBackgroundBrushProperty, value); }
         }
+
+        public static readonly DependencyProperty MouseOverBackgroundBrushProperty =
+            DependencyProperty.Register("MouseOverBackgroundBrush", typeof(Brush), typeof(ToggleCell), new PropertyMetadata(new SolidColorBrush(Colors.Blue)));
+        public Brush MouseOverBackgroundBrush
+        {
+            get { return (Brush)GetValue(MouseOverBackgroundBrushProperty); }
+            set { SetValue(MouseOverBackgroundBrushProperty, value); }
+        }
+        
 
         void UpdateVisual()
         {
