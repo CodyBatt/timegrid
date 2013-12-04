@@ -54,9 +54,9 @@ namespace TimeGrid
             var element = sender as ToggleCell;
             if (element == null) return;
 
-            if (_dragRegion != null)
+            if (_dragSource != null)
             {
-                _dragRegion.ApplySelection(_hourCells, _dragSource.Selected);
+                if(_dragRegion != null) _dragRegion.ApplySelection(_hourCells, _dragSource.Selected);
                 EndDragging();
             }
         }

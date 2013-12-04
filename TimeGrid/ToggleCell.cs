@@ -69,8 +69,7 @@ namespace TimeGrid
 
         void TimeCell_MouseEnter(object sender, MouseEventArgs e)
         {
-            var result = VisualStateManager.GoToState(this, "MouseOver", true);
-            int breakhere = 100;
+            VisualStateManager.GoToState(this, "MouseOver", true);
         }
 
         public static readonly DependencyProperty SelectedProperty =
